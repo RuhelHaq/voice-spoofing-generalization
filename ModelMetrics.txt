@@ -1,0 +1,46 @@
+Category,Key,Value,Notes
+Model,Name,LFCC-CNN Anti-Spoofing Classifier,
+Model,Task,Binary classification (spoof vs bona fide),
+Model,Input representation,LFCC feature maps (1 x 60 x T),
+Model,Framework,PyTorch,
+
+Data,Train/Dev source,ASVspoof2019-LA (logical access),
+Data,Eval (in-domain) source,ASVspoof2019-LA evaluation split (unlabeled),
+Data,Out-of-domain source,LibriSpeech test-clean (bonafide only),
+Data,Audio duration,Fixed 4.0 seconds (truncate/pad),
+Data,Sampling rate,16 kHz,
+
+Features,Feature type,LFCC (Linear Frequency Cepstral Coefficients),
+Features,Num coefficients,60,
+Features,FFT size,512,
+Features,Window length,25 ms,
+Features,Hop length,10 ms,
+Features,Normalization,Waveform amplitude normalization,
+Features,LFCC computation,Precomputed offline for all splits,
+
+Architecture,Input shape,1 x 60 x T (LFCC tensor),
+Architecture,Conv blocks,5 x (Conv + BatchNorm + ReLU),
+Architecture,Pooling,MaxPooling in early layers,
+Architecture,Channels,"16 → 32 → 64 → 128 → 128",
+Architecture,Output head,Fully connected → 1 logit,
+Architecture,Output activation,Sigmoid at inference (BCEWithLogitsLoss during training),
+
+Training,Loss,BCEWithLogitsLoss,
+Training,Class imbalance handling,pos_weight = 8.8,"bonafide is minority (N_neg / N_pos ≈ 8.8)"
+Training,Optimizer,Adam,
+Training,Learning rate,<fill from notebook>,Set in final training script
+Training,Epochs,10,
+Training,Scheduler,ReduceLROnPlateau,Monitors validation loss
+Training,Train/Dev split,ASVspoof LA train → dev (official protocol),
+
+Metrics (ASVspoof Dev),AUC,0.999965,
+Metrics (ASVspoof Dev),EER,0.2344%,Equal Error Rate
+Metrics (ASVspoof Dev),Accuracy,99.8309%,Threshold = 0.5
+Metrics (ASVspoof Dev),Predicted spoof fraction,89.91%,"% of dev trials classified as spoof at 0.5 threshold",
+
+Metrics (ASVspoof Eval),Labels,"Not released (unlabeled)",
+Metrics (ASVspoof Eval),Predicted spoof fraction,71.96%,"Model did not collapse; retains spoof decision boundary",
+
+Metrics (LibriSpeech OOD),Ground truth,"All bonafide (no spoof)",
+Metrics (LibriSpeech OOD),False Positive Rate,59.6%,"Bonafide trials misclassified as spoof at 0.5 threshold",
+Metrics (LibriSpeech OOD),Observation,"High FPR under domain shift","Model over-flags unfamiliar real speech as spoof"
